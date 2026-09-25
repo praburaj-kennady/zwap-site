@@ -1,11 +1,15 @@
 # Zwap — support and privacy pages
 
 The public pages for **Zwap**, the currency and unit converter for iPhone, served by
-GitHub Pages:
+GitHub Pages at **https://zwap.praburajkennady.me**:
 
-- `/` — about Zwap
-- `/support/` — contact and common questions (the App Store support URL)
-- `/privacy/` — the privacy policy (the App Store privacy policy URL)
+- [`/`](https://zwap.praburajkennady.me/) — about Zwap
+- [`/support/`](https://zwap.praburajkennady.me/support/) — contact and common questions (the App Store support URL)
+- [`/privacy/`](https://zwap.praburajkennady.me/privacy/) — the privacy policy (the App Store privacy policy URL)
+
+The domain is a Cloudflare CNAME, `zwap` → `praburaj-kennady.github.io`, with the proxy
+off ("DNS only") so GitHub can issue its HTTPS certificate. `CNAME` in this repo names it;
+the old `praburaj-kennady.github.io/zwap-site/` address redirects here.
 
 Plain HTML and one stylesheet; no scripts, no trackers, no third-party requests. The
 app's own source lives in a separate, private repository.

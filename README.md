@@ -1,7 +1,7 @@
 # Zwap — support and privacy pages
 
-The public pages for **Zwap**, the currency and unit converter for iPhone, served by
-GitHub Pages at **https://zwap.praburajkennady.me**:
+The public pages for **Zwap**, a currency converter, unit converter and world clock for
+iPhone, served by GitHub Pages at **https://zwap.praburajkennady.me**:
 
 - [`/`](https://zwap.praburajkennady.me/) — about Zwap
 - [`/support/`](https://zwap.praburajkennady.me/support/) — contact and common questions (the App Store support URL)

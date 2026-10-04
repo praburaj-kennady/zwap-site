@@ -73,7 +73,12 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
 .card p:last-child { margin-bottom: 0; }
 .card h2 { font-size: 18px; line-height: 24px; letter-spacing: 0; margin: 0 0 4px; }
 
-.hero { text-align: center; padding: 56px 0 8px; }
+/* The home page fills the window. Its content stands midway between the top of the window
+   and the footer's rule, and the footer at the window's foot. In a window too short for
+   both, the page scrolls, and the content keeps 84px above it and below it. */
+.home { display: flex; flex-direction: column; min-height: 100vh; min-height: 100svh; }
+.home main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.hero { text-align: center; padding: 56px 0 28px; }
 .hero .mark { width: min(240px, 70vw); margin: 0 auto 28px; }
 .hero h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 28px 0 0; }
@@ -84,14 +89,20 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
 .links a:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .links a:active { transform: none; } }
 
+/* The footer's two lines stand on the left, and its link to another page of the site on
+   the right, on the first line, as the header sets its logo and its nav. On a phone there
+   is no room beside the first line, and the link goes under the other two. */
 .site-footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
-  color: var(--muted); font-size: 15px; font-weight: 700; }
-.site-footer p { color: var(--muted); margin: 0 0 6px; }
+  color: var(--muted); font-size: 15px; font-weight: 700;
+  display: grid; grid-template-columns: 1fr auto; column-gap: 16px; }
+.site-footer p { color: var(--muted); margin: 0 0 6px; grid-column: 1; }
+.site-footer .footer-pages { grid-column: 2; grid-row: 1; }
 .site-footer a { color: var(--text-2); }
 
 @media (max-width: 480px) {
   h1 { font-size: 28px; line-height: 34px; }
   .site-nav { gap: 16px; }
+  .site-footer { display: block; }
 }
 
 /* Page transitions. The header is one fixed layer: it never moves with a page or scales,

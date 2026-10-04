@@ -8,6 +8,8 @@
   --base: #FFFFFF; --raised: #F5F5F7; --inverse: #111111;
   --text: #111111; --text-2: #555555; --muted: #6E6E73;
   --line: #E5E5EA; --accent: #0657DC;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drift: cubic-bezier(0.16, 1, 0.3, 1);  /* the app's moduleDrift */
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -26,7 +28,9 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* The gutter is kept on short pages too, so a page that scrolls and one that fits are laid
+   out the same width, and nothing steps sideways between them. */
+html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
 body {
   margin: 0; background: var(--base); color: var(--text);
   font: 500 17px/1.6 "Nunito", ui-rounded, -apple-system, system-ui, "Segoe UI", sans-serif;
@@ -40,13 +44,17 @@ body {
 .mark .outline { fill: var(--inverse); }
 .mark .shape { fill: var(--base); }
 .site-nav { display: flex; gap: 20px; }
-.site-nav a { color: var(--text-2); font-weight: 700; text-decoration: none; padding: 8px 0; }
-.site-nav a:hover { color: var(--text); }
+.site-nav a { color: var(--text-2); font-weight: 700; text-decoration: none; padding: 8px 0;
+  transition: color 150ms ease; }
+@media (hover: hover) and (pointer: fine) { .site-nav a:hover { color: var(--text); } }
 .site-nav a[aria-current="page"] { color: var(--text); text-decoration: underline;
   text-decoration-thickness: 2px; text-underline-offset: 6px; }
 
 h1 { font-weight: 900; font-size: 34px; line-height: 40px; letter-spacing: -0.5px;
   margin: 40px 0 6px; text-wrap: balance; }
+/* Where a page is changed in place (the script in each page's head), its heading takes focus
+   for a screen reader to read on from. It is not a control, so it shows no ring. */
+h1:focus { outline: none; }
 h2 { font-weight: 800; font-size: 22px; line-height: 28px; letter-spacing: -0.2px;
   margin: 40px 0 6px; text-wrap: balance; }
 h3 { font-weight: 800; font-size: 18px; line-height: 24px; margin: 28px 0 4px; text-wrap: balance; }
@@ -70,8 +78,11 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
 .hero h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 28px 0 0; }
 .links a { background: var(--raised); color: var(--text); font-weight: 800; text-decoration: none;
-  padding: 12px 22px; border-radius: 999px; }
-.links a:hover { background: var(--line); }
+  padding: 12px 22px; border-radius: 999px;
+  transition: background-color 150ms ease, transform 160ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .links a:hover { background: var(--line); } }
+.links a:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .links a:active { transform: none; } }
 
 .site-footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
   color: var(--muted); font-size: 15px; font-weight: 700; }
@@ -82,3 +93,115 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
   h1 { font-size: 28px; line-height: 34px; }
   .site-nav { gap: 16px; }
 }
+
+/* Page transitions. The header is one fixed layer: it never moves with a page or scales,
+   and only the content under it changes.
+   - Between Support and Privacy the content changes as the app's tabs do (Motion.moduleFade,
+     moduleDrift, moduleShift): a 0.1s crossfade while the old content drifts 32px towards
+     its side of the nav and the new comes in 32px from its own, landing in 0.25s. Chosen by
+     Prabu from five versions tried side by side (4 Oct 2026).
+   - To or from the home page or Accessibility, the old content scales down and fades out,
+     and the new zooms in to its size as it fades in after it.
+   What moves is the root, the picture of the whole view less the header, so a zoom is about
+   the middle of the window however long the page is and however far it is scrolled. The
+   small script in each page's head names the kind of change; without it, or under Reduce
+   Motion, the content only crossfades. In Arc the same script changes the page in place
+   instead of loading the next one, under these same rules. */
+@view-transition { navigation: auto; }
+.site-header { view-transition-name: site-header; }
+/* What shows around the content while it is scaled down or moved aside. */
+::view-transition { background: var(--base); }
+/* The change lasts as long as its content takes, and no longer. */
+::view-transition-group(root) { animation: none; }
+/* The header keeps still. It is drawn from the new page from the first frame: its picture
+   from the old page is not relied on, since Chrome sometimes hands that one over blank when
+   the click comes soon after a page has loaded, and the header blinked. Where the old page
+   was scrolled a little, the header glides back to its place. */
+::view-transition-group(site-header) { animation-duration: 200ms; animation-timing-function: var(--ease-out); }
+::view-transition-old(site-header) { animation: none; opacity: 0; }
+::view-transition-new(site-header) { animation: none; mix-blend-mode: normal; }
+/* The content crossfades: 0.1s ease-out, the app's moduleFade. Where only one of the two
+   pages shows a header (the home page has none), it fades where it stands, with the content. */
+::view-transition-old(root), ::view-transition-old(site-header):only-child {
+  animation: zwap-page-out 100ms ease-out both; opacity: 1; }
+::view-transition-new(root), ::view-transition-new(site-header):only-child {
+  animation: zwap-page-in 100ms ease-out both; }
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(slide-forward)::view-transition-old(root) {
+    animation: zwap-page-out 100ms ease-out both, zwap-drift-to-left 250ms var(--ease-drift) both; }
+  :root:active-view-transition-type(slide-forward)::view-transition-new(root) {
+    animation: zwap-page-in 100ms ease-out both, zwap-drift-from-right 250ms var(--ease-drift) both; }
+  :root:active-view-transition-type(slide-backward)::view-transition-old(root) {
+    animation: zwap-page-out 100ms ease-out both, zwap-drift-to-right 250ms var(--ease-drift) both; }
+  :root:active-view-transition-type(slide-backward)::view-transition-new(root) {
+    animation: zwap-page-in 100ms ease-out both, zwap-drift-from-left 250ms var(--ease-drift) both; }
+  :root:active-view-transition-type(zoom)::view-transition-old(root) {
+    animation: zwap-page-out 150ms linear both, zwap-zoom-out 150ms ease both; }
+  :root:active-view-transition-type(zoom)::view-transition-new(root) {
+    animation: zwap-page-in 180ms var(--ease-out) 90ms both,
+      zwap-zoom-in 270ms var(--ease-out) 90ms both; }
+  :root:active-view-transition-type(zoom)::view-transition-old(site-header):only-child {
+    animation: zwap-page-out 150ms linear both; }
+  :root:active-view-transition-type(zoom)::view-transition-new(site-header):only-child {
+    animation: zwap-page-in 180ms var(--ease-out) 90ms both; }
+}
+@keyframes zwap-page-out { to { opacity: 0; } }
+@keyframes zwap-page-in { from { opacity: 0; } }
+@keyframes zwap-drift-to-left { to { transform: translateX(-32px); } }
+@keyframes zwap-drift-from-right { from { transform: translateX(32px); } }
+@keyframes zwap-drift-to-right { to { transform: translateX(32px); } }
+@keyframes zwap-drift-from-left { from { transform: translateX(-32px); } }
+@keyframes zwap-zoom-out { to { transform: scale(0.94); } }
+@keyframes zwap-zoom-in { from { transform: scale(0.92); } }
+/* Coming back to the home page from another page doesn't replay the logo's splash: like the
+   app's launch, it plays when you arrive. */
+[data-arrived="site"] .splash, [data-arrived="site"] .splash * { animation: none !important; }
+
+/* ZWAP-SPLASH START: the home logo plays the app's launch splash (ZwapSplash.swift,
+   SplashMotion), in CSS alone. Every time and easing is the app's, warped per scene as the
+   app plays it. Reduced Motion, or a browser without CSS linear(), shows the logo still. */
+:root {
+  --zwap-ease-out-back: linear(0, 0.0952, 0.185, 0.2695, 0.3489, 0.4233, 0.4929, 0.5578, 0.6182, 0.6742, 0.726, 0.7737, 0.8174, 0.8573, 0.8936, 0.9264, 0.9558, 0.982, 1.0051, 1.0253, 1.0428, 1.0576, 1.0699, 1.0799, 1.0877, 1.0935, 1.0973, 1.0995, 1.1, 1.0991, 1.0968, 1.0934, 1.089, 1.0837, 1.0777, 1.0711, 1.0641, 1.0568, 1.0494, 1.042, 1.0348, 1.0278, 1.0213, 1.0154, 1.0103, 1.006, 1.0028, 1.0007, 1);
+  --zwap-ease-in-out-back: linear(0, -0.0021, -0.008, -0.0168, -0.0277, -0.0401, -0.053, -0.0658, -0.0776, -0.0877, -0.0952, -0.0995, -0.0997, -0.095, -0.0847, -0.068, -0.0441, -0.0122, 0.0285, 0.0787, 0.1392, 0.2108, 0.2943, 0.3904, 0.5, 0.6096, 0.7057, 0.7892, 0.8608, 0.9213, 0.9715, 1.0122, 1.0441, 1.068, 1.0847, 1.095, 1.0997, 1.0995, 1.0952, 1.0877, 1.0776, 1.0658, 1.053, 1.0401, 1.0277, 1.0168, 1.008, 1.0021, 1);
+  --zwap-ease-in-out-cubic: linear(0, 0, 0.0003, 0.001, 0.0023, 0.0045, 0.0078, 0.0124, 0.0185, 0.0264, 0.0362, 0.0481, 0.0625, 0.0795, 0.0992, 0.1221, 0.1481, 0.1777, 0.2109, 0.2481, 0.2894, 0.335, 0.3851, 0.4401, 0.5, 0.5599, 0.6149, 0.665, 0.7106, 0.7519, 0.7891, 0.8223, 0.8519, 0.8779, 0.9008, 0.9205, 0.9375, 0.9519, 0.9638, 0.9736, 0.9815, 0.9876, 0.9922, 0.9955, 0.9977, 0.999, 0.9997, 1, 1);
+}
+.splash { overflow: visible; }
+.splash g { transform-box: view-box; }
+.splash-outline { fill: var(--inverse); stroke: var(--inverse); stroke-width: 26.433; stroke-linejoin: round; }
+.splash-fill { fill: var(--base); }
+.z-travel, .z-bump, .z-turn, .arrow { transform-origin: 51.9641px 54.3944px; }
+.l-w { transform-origin: 115.3666px 63.5748px; }
+.l-a { transform-origin: 160.426px 63.5748px; }
+.l-p { transform-origin: 200.0885px 69.3424px; }
+/* Past 90° the app draws the Z a half turn back, so it lands exactly as drawn: copy A turns
+   0° → 180° and shows until the halfway point, copy B turns −180° → 0° and shows after. */
+.z-turn-a { opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .splash .z-turn-a .arrow-top { animation: zwap-arrow-top 0.33s var(--zwap-ease-out-back) 0.06s backwards,
+    zwap-fade-in 0.09s var(--zwap-ease-in-out-cubic) 0.06s backwards; }
+  .splash .z-turn-a .arrow-bottom { animation: zwap-arrow-bottom 0.33s var(--zwap-ease-out-back) 0.18s backwards,
+    zwap-fade-in 0.09s var(--zwap-ease-in-out-cubic) 0.18s backwards; }
+  .splash .z-travel { animation: zwap-travel 0.51s var(--zwap-ease-in-out-cubic) 0.81s backwards; }
+  .splash .z-bump { animation: zwap-bump 0.6s var(--zwap-ease-in-out-cubic) 0.75s backwards; }
+  .splash .z-turn-a { animation: zwap-turn-a 0.6s var(--zwap-ease-in-out-back) 0.75s backwards,
+    zwap-shown 1.05s linear; }
+  .splash .z-turn-b { animation: zwap-turn-b 0.6s var(--zwap-ease-in-out-back) 0.75s backwards,
+    zwap-hidden 1.05s linear; }
+  .splash-outline .l-w { animation: zwap-bloom 0.21s var(--zwap-ease-out-back) 1.08s backwards; }
+  .splash-fill .l-w { animation: zwap-bloom 0.216s var(--zwap-ease-out-back) 1.164s backwards; }
+  .splash-outline .l-a { animation: zwap-bloom 0.21s var(--zwap-ease-out-back) 1.158s backwards; }
+  .splash-fill .l-a { animation: zwap-bloom 0.216s var(--zwap-ease-out-back) 1.242s backwards; }
+  .splash-outline .l-p { animation: zwap-bloom 0.21s var(--zwap-ease-out-back) 1.236s backwards; }
+  .splash-fill .l-p { animation: zwap-bloom 0.216s var(--zwap-ease-out-back) 1.32s backwards; }
+}
+@keyframes zwap-arrow-top { from { transform: translate(-34.0426px, 34.0426px) scale(0.55); } }
+@keyframes zwap-arrow-bottom { from { transform: translate(34.0426px, -34.0426px) scale(0.55); } }
+@keyframes zwap-fade-in { from { opacity: 0; } }
+@keyframes zwap-travel { from { transform: translate(68.0359px, 5.6056px) scale(1.1433); } }
+@keyframes zwap-bump { 50% { transform: scale(0.86); } }
+@keyframes zwap-turn-a { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+@keyframes zwap-turn-b { from { transform: rotate(-180deg); } }
+@keyframes zwap-shown { from, to { opacity: 1; } }
+@keyframes zwap-hidden { from, to { opacity: 0; } }
+@keyframes zwap-bloom { from { transform: scale(0); } }
+/* ZWAP-SPLASH END */

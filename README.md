@@ -12,7 +12,8 @@ The domain is a Cloudflare CNAME, `zwap` → `praburaj-kennady.github.io`, with 
 off ("DNS only") so GitHub can issue its HTTPS certificate. `CNAME` in this repo names it;
 the old `praburaj-kennady.github.io/zwap-site/` address redirects here.
 
-Plain HTML and one stylesheet; no scripts, no trackers, no third-party requests. The
+Plain HTML, one stylesheet, and a small inline script that names each page transition
+and, in Arc, changes the page in place; no trackers, no third-party requests. The
 app's own source lives in a separate, private repository.
 
 Typeface: [Nunito](https://github.com/googlefonts/nunito) by Vernon Adams, Cyreal and

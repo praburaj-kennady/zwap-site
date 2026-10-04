@@ -6,7 +6,144 @@
   <title>Zwap Privacy Policy</title>
   <meta name="description" content="Zwap collects nothing about you: no account, no analytics, no tracking.">
   <meta name="color-scheme" content="light dark">
+  <link rel="preload" href="../assets/fonts/Nunito-Medium.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="../assets/fonts/Nunito-Bold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="../assets/fonts/Nunito-ExtraBold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="../assets/fonts/Nunito-Black.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="../assets/site.css">
+  <link rel="expect" href="#site-footer" blocking="render">
+  <script>
+    // Names each change of page for the stylesheet: "zoom" to or from the home page or
+    // Accessibility, and "slide-forward" or "slide-backward" between Support and Privacy,
+    // the way the nav orders them.
+    // The page before is read from the Navigation API, or the referrer; a back or forward
+    // step without that API only fades, since the referrer can't say where it came from.
+    (() => {
+      const order = ["", "support", "privacy", "accessibility"];
+      const place = (url) => order.indexOf(new URL(url, location.href).pathname.replace(/index\.html$/, "").split("/").filter(Boolean).pop() || "");
+      const named = (from, to) => {
+        const zooms = (page) => page === 0 || page === 3;
+        return zooms(from) || zooms(to) ? "zoom" : to > from ? "slide-forward" : "slide-backward";
+      };
+      // Asked each time the page is shown: one the browser kept for Back comes back without
+      // this script running again, and its referrer is then the page it first came from.
+      let kept = false;
+      addEventListener("pageshow", (event) => { kept = kept || event.persisted; });
+      const before = () => {
+        const activation = window.navigation && navigation.activation;
+        const kind = activation ? activation.navigationType : (performance.getEntriesByType("navigation")[0] || {}).type;
+        const from = activation ? activation.from && activation.from.url : (kept || kind === "back_forward" ? "" : document.referrer);
+        return from && kind !== "reload" && new URL(from).origin === location.origin ? place(from) : -1;
+      };
+      if (before() >= 0) document.documentElement.dataset.arrived = "site";
+      // The header is one fixed layer in every change. Only one scrolled out of view takes no
+      // part: it would fly across the page to its place.
+      const header = () => {
+        const bar = document.querySelector(".site-header");
+        const name = bar && bar.getBoundingClientRect().bottom <= 0 ? "none" : "";
+        if (bar && bar.style.viewTransitionName !== name) bar.style.viewTransitionName = name;
+      };
+      // Arc loads no page of this site after the first: the next one is put in place of this
+      // one (below). On Prabu's Mac (4 Oct 2026, Arc 1.164, Chromium 153) the whole page
+      // blinked each time Arc loaded a page, with a transition and without one; changed in
+      // place, it does not. Arc tells pages its theme colours, which is how it is known.
+      // Where it does load a page, it gets no transition.
+      const arc = () => {
+        let known = false;
+        try {
+          known = sessionStorage.getItem("zwap-arc") === "1" || !!getComputedStyle(document.documentElement).getPropertyValue("--arc-palette-title").trim();
+          if (known) sessionStorage.setItem("zwap-arc", "1");
+        } catch (error) {}
+        return known;
+      };
+      // Arc's colours reach a page only a second or two after it has loaded (they were still
+      // missing 1.4s after a reload), so they are looked for until then, and the answer is
+      // kept for the tab: a page loaded again knows at once.
+      const looking = setInterval(() => { if (arc() || performance.now() > 5000) clearInterval(looking); }, 250);
+      const off = (transition) => { transition.ready.catch(() => {}); transition.skipTransition(); };
+      addEventListener("pageswap", (event) => {
+        if (!event.viewTransition) return;
+        if (arc()) off(event.viewTransition); else header();
+      });
+      addEventListener("pagereveal", (event) => {
+        if (!event.viewTransition) return;
+        if (arc()) { off(event.viewTransition); return; }
+        header();
+        const from = before(), here = place(location.href);
+        if (from < 0 || here < 0 || from === here) return;
+        event.viewTransition.types.add(named(from, here));
+      });
+
+      // A change made in place: the page asked for is fetched, its content takes the place
+      // of this page's under the same transition, and the address, the title and the
+      // browser's history follow as if it had been loaded. If anything fails, it is loaded.
+      if (!window.navigation || !document.startViewTransition || !window.ViewTransition || !("types" in ViewTransition.prototype)) return;
+      let shown = place(location.href);
+      const pages = new Map();
+      const address = (url) => { const at = new URL(url, location.href); return at.origin + at.pathname; };
+      const fetched = (url) => {
+        if (!pages.has(url)) {
+          pages.set(url, fetch(url).then((reply) => reply.ok ? reply.text() : Promise.reject(new Error(reply.status))));
+          pages.get(url).catch(() => pages.delete(url));
+        }
+        return pages.get(url);
+      };
+      const about = (page) => page.querySelector('meta[name="description"]');
+      // A link pointed at or focused has its page fetched ahead, so the change starts at the click.
+      const ahead = (event) => {
+        const link = event.target.closest && event.target.closest("a[href]");
+        if (link && link.origin === location.origin && place(link.href) >= 0 && place(link.href) !== shown && arc()) fetched(address(link.href));
+      };
+      addEventListener("pointerover", ahead);
+      addEventListener("focusin", ahead);
+      const change = async (event, there) => {
+        try {
+          const page = there === shown ? null : new DOMParser().parseFromString(await fetched(address(event.destination.url)), "text/html");
+          if (event.signal.aborted) return;
+          const next = page && page.querySelector(".page");
+          if (page && !next) throw new Error("not a page of this site");
+          const update = () => {
+            if (next) {
+              document.title = page.title;
+              if (about(document) && about(page)) about(document).content = about(page).content;
+              document.querySelector(".page").replaceWith(next);
+              document.documentElement.dataset.arrived = "site";
+            }
+            // To the top, or back to where the page stood for a step back or forward.
+            if (!event.signal.aborted) event.scroll();
+            header();
+          };
+          header();
+          const moving = next && !event.hasUAVisualTransition ? document.startViewTransition({ update, types: [named(shown, there)] }) : update();
+          shown = there;
+          // A change that another one overtakes ends early; that is not an error.
+          if (moving) { moving.ready.catch(() => {}); moving.finished.catch(() => {}); await moving.updateCallbackDone; }
+          // A loaded page is read from its start. Here focus goes to the new page's heading,
+          // so a screen reader says where it now is and reads on from there.
+          const heading = document.querySelector("h1");
+          if (heading) {
+            heading.tabIndex = -1;
+            heading.addEventListener("blur", () => heading.removeAttribute("tabindex"), { once: true });
+            heading.focus({ preventScroll: true });
+          }
+        } catch (error) {
+          location.reload();
+        }
+      };
+      navigation.addEventListener("navigate", (event) => {
+        if (!event.canIntercept || event.hashChange || event.downloadRequest !== null || event.formData || event.navigationType === "reload") return;
+        const there = place(event.destination.url);
+        // A step back or forward between pages changed in place is answered in any browser:
+        // for those the browser moves the address and nothing else. A new change is made in
+        // place in Arc alone.
+        if (there < 0 || (event.navigationType !== "traverse" && !arc())) return;
+        // The address moves before the content does. Until then this page's links, written
+        // relative to its own address, keep pointing where they did.
+        if (there !== shown) for (const link of document.links) link.href = link.href;
+        event.intercept({ scroll: "manual", focusReset: "manual", handler: () => change(event, there) });
+      });
+    })();
+  </script>
 </head>
 <body>
   <div class="page">
@@ -38,7 +175,7 @@
       <h2>Contact</h2>
       <p>Questions about privacy in Zwap: <a href="mailto:hello@praburajkennady.me">hello@praburajkennady.me</a></p>
     </main>
-    <footer class="site-footer">
+    <footer class="site-footer" id="site-footer">
       <p>Zwap, designed by <a href="https://praburajkennady.me">Praburaj Kennady</a>.</p>
       <p><a href="mailto:hello@praburajkennady.me">hello@praburajkennady.me</a></p>
       <p><a href="../accessibility/">Accessibility</a></p>

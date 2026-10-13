@@ -1,4 +1,5 @@
 @font-face { font-family: "Nunito"; font-weight: 500; font-display: swap; src: url("fonts/Nunito-Medium.ttf") format("truetype"); }
+@font-face { font-family: "Nunito"; font-weight: 600; font-display: swap; src: url("fonts/Nunito-SemiBold.ttf") format("truetype"); }
 @font-face { font-family: "Nunito"; font-weight: 700; font-display: swap; src: url("fonts/Nunito-Bold.ttf") format("truetype"); }
 @font-face { font-family: "Nunito"; font-weight: 800; font-display: swap; src: url("fonts/Nunito-ExtraBold.ttf") format("truetype"); }
 @font-face { font-family: "Nunito"; font-weight: 900; font-display: swap; src: url("fonts/Nunito-Black.ttf") format("truetype"); }
@@ -31,6 +32,9 @@
 /* The gutter is kept on short pages too, so a page that scrolls and one that fits are laid
    out the same width, and nothing steps sideways between them. */
 html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
+/* Type is the app's own scale (CLAUDE.md ▸ Typography), size, line height, weight and
+   tracking, with one exception: running text. The app has no style for reading paragraphs,
+   and its Body, 16 Bold, is heavy over a page, so the site reads at 17px Medium, 1.6. */
 body {
   margin: 0; background: var(--base); color: var(--text);
   font: 500 17px/1.6 "Nunito", ui-rounded, -apple-system, system-ui, "Segoe UI", sans-serif;
@@ -44,27 +48,34 @@ body {
 .mark .outline { fill: var(--inverse); }
 .mark .shape { fill: var(--base); }
 .site-nav { display: flex; gap: 20px; }
-.site-nav a { color: var(--text-2); font-weight: 700; text-decoration: none; padding: 8px 0;
+/* Title 2: 18 / 24, Bold. */
+.site-nav a { color: var(--text-2); font-size: 18px; line-height: 24px; font-weight: 700;
+  text-decoration: none; padding: 8px 0;
   transition: color 150ms ease; }
 @media (hover: hover) and (pointer: fine) { .site-nav a:hover { color: var(--text); } }
 .site-nav a[aria-current="page"] { color: var(--text); text-decoration: underline;
   text-decoration-thickness: 2px; text-underline-offset: 6px; }
 
+/* Display: 34 / 40, Black, -0.5. */
 h1 { font-weight: 900; font-size: 34px; line-height: 40px; letter-spacing: -0.5px;
   margin: 40px 0 6px; text-wrap: balance; }
 /* Where a page is changed in place (the script in each page's head), its heading takes focus
    for a screen reader to read on from. It is not a control, so it shows no ring. */
 h1:focus { outline: none; }
-h2 { font-weight: 800; font-size: 22px; line-height: 28px; letter-spacing: -0.2px;
+/* Title 1: 22 / 28, Bold, -0.2. */
+h2 { font-weight: 700; font-size: 22px; line-height: 28px; letter-spacing: -0.2px;
   margin: 40px 0 6px; text-wrap: balance; }
-h3 { font-weight: 800; font-size: 18px; line-height: 24px; margin: 28px 0 4px; text-wrap: balance; }
+/* Title 2: 18 / 24, Bold. */
+h3 { font-weight: 700; font-size: 18px; line-height: 24px; margin: 28px 0 4px; text-wrap: balance; }
 p, li { color: var(--text-2); }
 p { margin: 0 0 14px; }
 ul { padding-left: 1.2em; margin: 0 0 14px; }
 li { margin: 4px 0; }
-strong { color: var(--text); font-weight: 800; }
-.meta { color: var(--muted); font-size: 15px; font-weight: 700; margin: 0 0 24px; }
-.lede { font-size: 19px; line-height: 1.55; color: var(--text); }
+strong { color: var(--text); font-weight: 700; }
+/* Callout: 15 / 20, SemiBold. */
+.meta { color: var(--muted); font-size: 15px; line-height: 20px; font-weight: 600; margin: 0 0 24px; }
+/* The reading style, in the primary colour. */
+.lede { color: var(--text); }
 
 a { color: var(--accent); text-underline-offset: 3px; }
 a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
@@ -82,7 +93,9 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
 .hero .mark { width: min(240px, 70vw); margin: 0 auto 28px; }
 .hero h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 28px 0 0; }
-.links a { background: var(--raised); color: var(--text); font-weight: 800; text-decoration: none;
+/* Title 2, as the app's button labels are. */
+.links a { background: var(--raised); color: var(--text); font-size: 18px; line-height: 24px;
+  font-weight: 700; text-decoration: none;
   padding: 12px 22px; border-radius: 999px;
   transition: background-color 150ms ease, transform 160ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) { .links a:hover { background: var(--line); } }
@@ -93,14 +106,15 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-
    the right, on the first line, as the header sets its logo and its nav. On a phone there
    is no room beside the first line, and the link goes under the other two. */
 .site-footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line);
-  color: var(--muted); font-size: 15px; font-weight: 700;
+  color: var(--muted); font-size: 15px; line-height: 20px; font-weight: 600; /* Callout */
   display: grid; grid-template-columns: 1fr auto; column-gap: 16px; }
 .site-footer p { color: var(--muted); margin: 0 0 6px; grid-column: 1; }
 .site-footer .footer-pages { grid-column: 2; grid-row: 1; }
 .site-footer a { color: var(--text-2); }
 
 @media (max-width: 480px) {
-  h1 { font-size: 28px; line-height: 34px; }
+  /* Headline: 28 / 34, ExtraBold, -0.3. */
+  h1 { font-size: 28px; line-height: 34px; font-weight: 800; letter-spacing: -0.3px; }
   .site-nav { gap: 16px; }
   .site-footer { display: block; }
 }
